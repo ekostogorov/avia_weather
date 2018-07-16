@@ -2,43 +2,25 @@ import re
 from datetime import datetime
 
 class Metar(object):
-    def __init__(self, message):
-        self.raw_metar = message
-        self.metar_header = None
-        self.visibility = None
-        self.wind = None
-        self.temperature = None
-        self.slp = None
-        self.rwy_condition = None
-        self.clouds = None
-        self.ww = None
-        self.conditions_list = []
+    message = None
+    visibility = None
+    header = None
+    wind = None
+    temperature = None
+    slp = None
+    rwy_condition = None
+    clouds = None
+    ww = None
 
-    def cavok(self):
-        if "CAVOK" in self.raw_metar:
-            self.conditions_list.append("green")
-            return "green"
-        else:
-            return "no cavok"
+    mapper = None
 
-    def translate_month(self, month): # translator for
-        months_dict = {"january": "января",
-                       "february": "февраля",
-                       "march": "марта",
-                       "april": "апреля",
-                       "may": "мая",
-                       "june": "июня",
-                       "july": "июля",
-                       "august": "августа",
-                       "septemper": "сентября",
-                       "october": "октября",
-                       "november": "ноября",
-                       "december": "декабря"}
+    def __init__(self, api_url):
+        self.mapper = metar_mapper(api_url)
 
-        if month.lower() in months_dict:
-            return months_dict[month.lower()]
-        else:
-            return month
+    def Raw(self, airport_code):
+        self.__get_metar__(airport_code)
+        return self.message
+
 
 
     def get_header(self):
@@ -54,7 +36,7 @@ class Metar(object):
 
     def clouds_heigth_check(self):
         try:
-            cl_search = re.search(r"[FEW,SCT,BKN,OVC,SKG,NSC]+\d{3}", self.raw_metar)
+            cl_search = re.search(r"[FEW,SCT,BKN,OVC,SKG,NSC]+\d{3}", self.message)
             clouds = cl_search.group(0)
             clouds_heigth = re.findall(r"\d+", clouds)
             self.clouds = clouds_heigth
@@ -218,3 +200,10 @@ class Metar(object):
                     return "60%"
                 else:
                     return "0%"
+
+    # loading raw metar data
+    def __get_metar__(self, airport_code):
+        try:
+            self.message = self.mapper.Get(airport_code)
+        except:
+            print("error loading metar")
